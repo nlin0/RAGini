@@ -6,87 +6,94 @@ and allows users to query index with a natural language.
 import json
 import faiss
 import numpy as np
+import torch
 from transformers import AutoModel, AutoTokenizer
+import torch.nn.functional as F
 
 MODEL_NAME = "BAAI/bge-base-en-v1.5"
 PREPROCESSED_FILE = "preprocessed_documents.json"
 INDEX_FILE = "faiss.index"
 
-def load_preprocessed_documents(filename):
-    with open(filename, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data
+def get_device():
+    if torch.backends.mps.is_available():
+        return "mps"
+    elif torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
 
-def build_faiss_index(embeddings, dim):
+
+def load_preprocessed_documents(filename):
+    with open(filename, "r") as f:
+        return json.load(f)
+
+
+def build_faiss_index(embeddings):
+    embeddings = np.array(embeddings).astype("float32")
+    dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
-    embeddings_np = np.array(embeddings).astype('float32')
-    index.add(embeddings_np)
+    index.add(embeddings)
     return index
 
-def save_faiss_index(index, index_path):
-    faiss.write_index(index, index_path)
 
-def load_faiss_index(index_path):
-    return faiss.read_index(index_path)
+def embed_query(query, model, tokenizer, device):
+    enc = tokenizer(
+        query, max_length=512, padding=True, truncation=True, return_tensors="pt"
+    )
+    enc = {k: v.to(device) for k, v in enc.items()}
 
-def embed_query(text, model, tokenizer, device='cpu'):
-    import torch
-    import torch.nn.functional as F
-    model.eval()
     with torch.no_grad():
-        encoded_input = tokenizer(text, max_length=512, padding=True, truncation=True, return_tensors='pt')
-        encoded_input = {k: v.to(device) for k, v in encoded_input.items()}
-        output = model(**encoded_input)
-        embeddings = output.last_hidden_state
-        attention_mask = encoded_input['attention_mask']
-        embeddings = (embeddings * attention_mask.unsqueeze(-1)).sum(1) / attention_mask.sum(-1, keepdim=True)
-        embeddings = F.normalize(embeddings, p=2, dim=1)
-        return embeddings.cpu().squeeze().numpy().astype('float32')
+        out = model(**enc)
+        seq = out.last_hidden_state
+        mask = enc["attention_mask"]
 
-def query_index(query, index, model, tokenizer, documents, top_k=5, device='cpu'):
-    query_embedding = embed_query(query, model, tokenizer, device=device)
-    query_embedding = np.expand_dims(query_embedding, axis=0)
-    D, I = index.search(query_embedding, top_k)
-    # D: distances, I: indices
+        pooled = (seq * mask.unsqueeze(-1)).sum(1) / mask.sum(-1, keepdim=True)
+        pooled = F.normalize(pooled, p=2, dim=1)
+
+    return pooled.cpu().numpy().astype("float32")  # shape (1, 768)
+
+
+def query_index(query, index, model, tokenizer, documents, top_k=5, device="cpu"):
+    q_emb = embed_query(query, model, tokenizer, device)
+    D, I = index.search(q_emb, top_k)
+
     results = []
     for idx, dist in zip(I[0], D[0]):
-        if idx < 0 or idx >= len(documents):
-            continue
         doc = documents[idx]
-        doc_copy = doc.copy() if isinstance(doc, dict) else {"text": str(doc)}
-        doc_copy["score"] = float(dist)
-        results.append(doc_copy)
+        results.append({
+            "id": doc["id"],
+            "text": doc["text"],
+            "score": float(dist)
+        })
     return results
 
-def main():
 
-    # Load preprocessed documents and embeddings
+def main():
+    device = get_device()
+    print(f"Using device: {device}")
+
+    # print("Loading documents...")
     documents = load_preprocessed_documents(PREPROCESSED_FILE)
     embeddings = [doc["embedding"] for doc in documents]
-    dim = len(embeddings[0])
 
-    # Build FAISS index if not saved, otherwise load existing
-    try:
-        index = load_faiss_index(INDEX_FILE)
-    except Exception:
-        index = build_faiss_index(embeddings, dim)
-        save_faiss_index(index, INDEX_FILE)
+    # print("Building FAISS index...")
+    index = build_faiss_index(embeddings)
 
-    # Load model and tokenizer
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Loading BGE model...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModel.from_pretrained(MODEL_NAME).to(device)
 
     while True:
         query = input("Query: ").strip()
-        if query.lower() in ["exit", "quit"]:
-            print("Goodbye.")
+        if query in ["quit", "exit"]:
             break
+
         results = query_index(query, index, model, tokenizer, documents, top_k=5, device=device)
+        
         print("\nTop Results:")
-        for i, res in enumerate(results):
-            print(f"{i+1}. {res.get('text', '')} (Score: {res['score']:.4f})")
-        print("\n")
+        for i, r in enumerate(results):
+            print(f"{i+1}. (ID {r['id']}) Score={r['score']:.4f}")
+            print(r["text"])
+            print("")
 
 if __name__ == "__main__":
     main()

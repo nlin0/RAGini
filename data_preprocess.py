@@ -3,72 +3,63 @@ data_preprocess.py is used to preprocess the data for the model. Specifically,
 it reads the dataset, encodes the document through the BGE model,
 and outputs the encoded document and the query to a JSON file..
 """
-
 import json
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 
-# constants that can be changed later on if needed
 MODEL_NAME = "BAAI/bge-base-en-v1.5"
 INPUT_FILE = "documents.json"
 OUTPUT_FILE = "preprocessed_documents.json"
 
+def get_device():
+    """
+    Decide the best available device:
+      - Apple M1/M2 → 'mps'
+      - CUDA GPU → 'cuda'
+      - Otherwise → 'cpu'
+    """
+    if torch.backends.mps.is_available():
+        return "mps"
+    elif torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
 
-def embed_docs(docs, model, tokenizer, device='cpu'):
-    """
-    Embed documents using PyTorch and the BGE model.
-    
-    Parameters:
-        docs: List of documents (dicts or strings)
-        model: PyTorch model for encoding
-        tokenizer: Tokenizer for the model
-        device: Device to run inference on ('cpu' or 'cuda')
-    
-    Returns:
-        List of processed documents with embeddings
-    """
+
+def embed_docs(docs, model, tokenizer, device):
     processed = []
-    model.eval()  # set model to evaluation mode
+    model.eval()
 
-    with torch.no_grad():  # disable gradient computation for inference
-        for i, doc in enumerate(tqdm(docs, desc='Embedding documents')):
-            # determine text for document
-            if type(doc) is dict:
-                if "text" in doc:
-                    text = doc["text"]
-                else:
-                    text = ""
-            else:
-                # document is just a plain string
-                text = doc
+    with torch.no_grad():
+        for doc in tqdm(docs, desc="Encoding documents"):
+            text = doc.get("text", "")
+            doc_id = doc.get("id")
 
-            # tokenize and encode the text
-            encoded_input = tokenizer(text, max_length=512, padding=True, 
-                                     truncation=True, return_tensors='pt')
-            encoded_input = {k: v.to(device) for k, v in encoded_input.items()}
-            
-            model_output = model(**encoded_input)
-            # BGE model, mean pooling over token embeddings and take the [CLS] token embedding
-            embeddings = model_output.last_hidden_state
-            # mean pooling: average over sequence length dimension
-            attention_mask = encoded_input['attention_mask']
-            embeddings = (embeddings * attention_mask.unsqueeze(-1)).sum(1) / attention_mask.sum(-1, keepdim=True)
-            
-            # l2 normalization
-            embeddings = F.normalize(embeddings, p=2, dim=1)
-            embedding = embeddings.cpu().squeeze().tolist()
+            # tokenization
+            encoded = tokenizer(
+                text,
+                max_length=512,
+                padding=True,
+                truncation=True,
+                return_tensors="pt"
+            )
+            encoded = {k: v.to(device) for k, v in encoded.items()}
 
-            # get document ID
-            if type(doc) is dict and "id" in doc:
-                doc_id = doc["id"]
-            else:
-                doc_id = i
+            # forward pass
+            out = model(**encoded)
 
-            # add to processed list
+            # mean pool
+            seq = out.last_hidden_state  # [1, seq_len, 768]
+            mask = encoded["attention_mask"]
+            pooled = (seq * mask.unsqueeze(-1)).sum(1) / mask.sum(-1, keepdim=True)
+
+            # normalize
+            emb = F.normalize(pooled, p=2, dim=1)
+            embedding = emb.cpu().squeeze().tolist()
+
             processed.append({
-                'id': doc_id,
+                "id": doc_id,
                 "text": text,
                 "embedding": embedding
             })
@@ -77,20 +68,21 @@ def embed_docs(docs, model, tokenizer, device='cpu'):
 
 
 if __name__ == "__main__":
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = get_device()
     print(f"Using device: {device}")
-    
-    print(f"Loading model {MODEL_NAME}...")
+
+    print("Loading model...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModel.from_pretrained(MODEL_NAME)
-    model.to(device)
-    
-    with open(INPUT_FILE, 'r') as f:
+    model = AutoModel.from_pretrained(MODEL_NAME).to(device)
+
+    print(f"Reading {INPUT_FILE}...")
+    with open(INPUT_FILE, "r") as f:
         docs = json.load(f)
-    
+
     processed = embed_docs(docs, model, tokenizer, device)
 
-    with open(OUTPUT_FILE, 'w') as f:
+    print(f"Saving {OUTPUT_FILE}...")
+    with open(OUTPUT_FILE, "w") as f:
         json.dump(processed, f)
-    
-    print(f"Processed {len(processed)} documents and saved to {OUTPUT_FILE}")
+
+    print(f"Done! Encoded {len(processed)} documents.")
