@@ -69,8 +69,6 @@ class RAGSystem:
         Returns:
             str: Generated answer
         """
-        print(f"\nQuery: {query}")
-        
         # step 1: encode query
         print("Encoding...")
         query_embedding = self.encoder.encode(query)
