@@ -4,6 +4,7 @@ This is Component 5 of the RAG pipeline - LLM Generation.
 """
 from llama_cpp import Llama
 import os
+import sys
 
 # model options (user should download one of these)
 MODEL_OPTIONS = {
@@ -39,12 +40,21 @@ class LLMGenerator:
                 f"wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF/resolve/main/tinyllama-1.1b-chat-v0.3.Q4_K_M.gguf"
             )
         
-        self.llm = Llama(
-            model_path=model_path,
-            n_ctx=n_ctx,
-            n_threads=n_threads,
-            verbose=False
-        )
+        # suppress Metal warnings from llama-cpp-python
+        devnull = open(os.devnull, 'w')
+        old_stderr = sys.stderr
+        sys.stderr = devnull
+        
+        try:
+            self.llm = Llama(
+                model_path=model_path,
+                n_ctx=n_ctx,
+                n_threads=n_threads,
+                verbose=False
+            )
+        finally:
+            sys.stderr = old_stderr
+            devnull.close()
         
         self.model_name = model_name
     

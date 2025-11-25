@@ -72,9 +72,11 @@ class RAGSystem:
         print(f"\nQuery: {query}")
         
         # step 1: encode query
+        print("Encoding...")
         query_embedding = self.encoder.encode(query)
         
         # step 2: vector search
+        print("FAISS search...")
         distances, indices = self.vector_db.search(query_embedding, top_k=top_k)
         
         if show_context:
@@ -85,9 +87,11 @@ class RAGSystem:
                 print(f"  {doc['text'][:150]}...")
         
         # step 3: document retrieval
+        print("Document retrieval...")
         retrieved_texts = self.doc_retriever.get_texts_by_indices(indices)
         
         # step 4: prompt augmentation
+        print("Prompt augmentation...")
         augmented_prompt = format_prompt_for_chat(query, retrieved_texts, top_k=top_k)
         
         if show_context:
@@ -95,6 +99,7 @@ class RAGSystem:
             print(augmented_prompt[:500] + "...")
         
         # step 5: LLM generation
+        print("Generating answer...")
         response = self.llm.generate_chat(augmented_prompt, max_tokens=256, temperature=0.7)
         
         return response
