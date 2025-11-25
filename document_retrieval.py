@@ -17,7 +17,6 @@ class DocumentRetriever:
         Args:
             preprocessed_file: Path to preprocessed_documents.json
         """
-        print("Loading documents into memory...")
         with open(preprocessed_file, "r") as f:
             documents = json.load(f)
         
@@ -31,8 +30,6 @@ class DocumentRetriever:
             if doc_id not in self.documents_by_id:
                 self.documents_by_id[doc_id] = []
             self.documents_by_id[doc_id].append((idx, doc))
-        
-        print(f"Loaded {len(documents)} document chunks.")
     
     def get_by_index(self, index):
         """

@@ -47,14 +47,9 @@ class VectorDB:
         Args:
             preprocessed_file: Path to preprocessed_documents.json
         """
-        print("Loading preprocessed documents...")
         self.documents = load_preprocessed_documents(preprocessed_file)
-        
-        print("Building FAISS index...")
         embeddings = [doc["embedding"] for doc in self.documents]
         self.index = build_faiss_index(embeddings)
-        
-        print(f"Vector database ready with {len(self.documents)} documents.")
     
     def search(self, query_embedding, top_k=3):
         """

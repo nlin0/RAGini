@@ -41,7 +41,6 @@ class QueryEncoder:
             device = get_device()
         self.device = device
         
-        print(f"Loading BGE encoder model on {device}...")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name).to(device)
         self.model.eval()

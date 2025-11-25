@@ -39,9 +39,6 @@ class LLMGenerator:
                 f"wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF/resolve/main/tinyllama-1.1b-chat-v0.3.Q4_K_M.gguf"
             )
         
-        print(f"Loading LLM model: {model_path}")
-        print("This may take a moment...")
-        
         self.llm = Llama(
             model_path=model_path,
             n_ctx=n_ctx,
@@ -50,7 +47,6 @@ class LLMGenerator:
         )
         
         self.model_name = model_name
-        print("LLM model loaded successfully!")
     
     def generate(self, prompt, max_tokens=256, temperature=0.7, top_p=0.9, stop=None):
         """
