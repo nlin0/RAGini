@@ -3,6 +3,10 @@ data_preprocess.py is used to preprocess the data for the model. Specifically,
 it reads the dataset, encodes the document through the BGE model,
 and outputs the encoded document and the query to a JSON file..
 """
+import os
+# fix OpenMP conflict on macOS when using both FAISS and PyTorch
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import json
 import torch
 import torch.nn.functional as F
