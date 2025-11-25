@@ -64,7 +64,7 @@ class VectorDB:
                 - distances: numpy array of shape (top_k,) - L2 distances
                 - indices: numpy array of shape (top_k,) - document indices
         """
-        # reshape to (1, 768) for FAISS batch search
+        # reshape for FAISS batch search
         query_embedding = query_embedding.reshape(1, -1).astype("float32")
         
         # search

@@ -23,7 +23,7 @@ class DocumentRetriever:
         # build in-memory dictionary: index -> document
         self.documents_by_index = documents
         
-        # also build a mapping by document ID (in case multiple chunks have same ID)
+        # mapping by document id (in case multiple chunks have same id)
         self.documents_by_id = {}
         for idx, doc in enumerate(documents):
             doc_id = doc["id"]
@@ -68,7 +68,7 @@ class DocumentRetriever:
             List of document text strings
         """
         texts = []
-        seen_ids = set()  # For deduplication by document ID
+        seen_ids = set()  # deduplication by document ID
         
         for idx in indices:
             doc = self.get_by_index(idx)
@@ -76,8 +76,6 @@ class DocumentRetriever:
                 continue
             
             # deduplicate: if we've seen this document ID before, skip it
-            # (as per assignment: "if two embeddings have the same URL/id, 
-            # we would only include it once into our search results")
             if doc["id"] in seen_ids:
                 continue
             
@@ -88,17 +86,17 @@ class DocumentRetriever:
 
 
 if __name__ == "__main__":
-    # test the document retriever
+    # test
     retriever = DocumentRetriever()
     
-    # test retrieval by index
+    # test by index
     print("\nTesting retrieval by index:")
     doc = retriever.get_by_index(0)
     if doc:
         print(f"Document ID: {doc['id']}")
         print(f"Text (first 100 chars): {doc['text'][:100]}...")
     
-    # test retrieval by multiple indices
+    # test by multiple indices
     print("\nTesting retrieval by multiple indices:")
     texts = retriever.get_texts_by_indices([0, 1, 2, 3, 4])
     print(f"Retrieved {len(texts)} unique documents")
