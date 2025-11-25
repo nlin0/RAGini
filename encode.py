@@ -99,13 +99,14 @@ def encode_query(query_text, encoder=None):
 
 if __name__ == "__main__":
     # encoder test
-    encoder = QueryEncoder()
-    
-    test_query = "What causes squirrels to lose fur?"
-    embedding = encoder.encode(test_query)
-    
-    print(f"Query: {test_query}")
-    print(f"Embedding shape: {embedding.shape}")
-    print(f"Embedding (first 10 values): {embedding[:10]}")
+    # encoder = QueryEncoder()
+    # 
+    # test_query = "What causes squirrels to lose fur?"
+    # embedding = encoder.encode(test_query)
+    # 
+    # print(f"Query: {test_query}")
+    # print(f"Embedding shape: {embedding.shape}")
+    # print(f"Embedding (first 10 values): {embedding[:10]}")
+    pass
 
 

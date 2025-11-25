@@ -87,20 +87,21 @@ class DocumentRetriever:
 
 if __name__ == "__main__":
     # test
-    retriever = DocumentRetriever()
-    
-    # test by index
-    print("\nTesting retrieval by index:")
-    doc = retriever.get_by_index(0)
-    if doc:
-        print(f"Document ID: {doc['id']}")
-        print(f"Text (first 100 chars): {doc['text'][:100]}...")
-    
-    # test by multiple indices
-    print("\nTesting retrieval by multiple indices:")
-    texts = retriever.get_texts_by_indices([0, 1, 2, 3, 4])
-    print(f"Retrieved {len(texts)} unique documents")
-    for i, text in enumerate(texts):
-        print(f"{i+1}. {text[:80]}...")
+    # retriever = DocumentRetriever()
+    # 
+    # # test by index
+    # print("\nTesting retrieval by index:")
+    # doc = retriever.get_by_index(0)
+    # if doc:
+    #     print(f"Document ID: {doc['id']}")
+    #     print(f"Text (first 100 chars): {doc['text'][:100]}...")
+    # 
+    # # test by multiple indices
+    # print("\nTesting retrieval by multiple indices:")
+    # texts = retriever.get_texts_by_indices([0, 1, 2, 3, 4])
+    # print(f"Retrieved {len(texts)} unique documents")
+    # for i, text in enumerate(texts):
+    #     print(f"{i+1}. {text[:80]}...")
+    pass
 
 

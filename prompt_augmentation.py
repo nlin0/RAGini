@@ -64,22 +64,23 @@ Answer:"""
 
 if __name__ == "__main__":
     # test prompt augmentation
-    test_query = "What causes squirrels to lose fur?"
-    test_docs = [
-        "Squirrels can lose fur due to various reasons including parasites, stress, or seasonal changes.",
-        "Fur loss in squirrels is often caused by mites or other external parasites that affect the skin.",
-        "Nutritional deficiencies can also lead to fur loss in squirrels, especially during winter months."
-    ]
-    
-    print("Test Query:", test_query)
-    print("\n" + "="*60)
-    print("Augmented Prompt:")
-    print("="*60)
-    print(augment_prompt(test_query, test_docs))
-    
-    print("\n" + "="*60)
-    print("Chat-Formatted Prompt:")
-    print("="*60)
-    print(format_prompt_for_chat(test_query, test_docs))
+    # test_query = "What causes squirrels to lose fur?"
+    # test_docs = [
+    #     "Squirrels can lose fur due to various reasons including parasites, stress, or seasonal changes.",
+    #     "Fur loss in squirrels is often caused by mites or other external parasites that affect the skin.",
+    #     "Nutritional deficiencies can also lead to fur loss in squirrels, especially during winter months."
+    # ]
+    # 
+    # print("Test Query:", test_query)
+    # print("\n" + "="*60)
+    # print("Augmented Prompt:")
+    # print("="*60)
+    # print(augment_prompt(test_query, test_docs))
+    # 
+    # print("\n" + "="*60)
+    # print("Chat-Formatted Prompt:")
+    # print("="*60)
+    # print(format_prompt_for_chat(test_query, test_docs))
+    pass
 
 

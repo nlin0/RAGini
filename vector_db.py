@@ -80,24 +80,25 @@ class VectorDB:
 
 if __name__ == "__main__":
     # test the vector database
-    from encode import QueryEncoder
-    
-    print("Initializing vector database...")
-    db = VectorDB()
-    
-    print("\nInitializing query encoder...")
-    encoder = QueryEncoder()
-    
-    # test search
-    test_query = "What causes squirrels to lose fur?"
-    print(f"\nQuery: {test_query}")
-    
-    query_emb = encoder.encode(test_query)
-    distances, indices = db.search(query_emb, top_k=5)
-    
-    print("\nTop Results:")
-    for i, (dist, idx) in enumerate(zip(distances, indices)):
-        doc = db.get_document_by_index(idx)
-        print(f"{i+1}. (ID {doc['id']}) Distance={dist:.4f}")
-        print(f"   {doc['text'][:100]}...")
-        print()
+    # from encode import QueryEncoder
+    # 
+    # print("Initializing vector database...")
+    # db = VectorDB()
+    # 
+    # print("\nInitializing query encoder...")
+    # encoder = QueryEncoder()
+    # 
+    # # test search
+    # test_query = "What causes squirrels to lose fur?"
+    # print(f"\nQuery: {test_query}")
+    # 
+    # query_emb = encoder.encode(test_query)
+    # distances, indices = db.search(query_emb, top_k=5)
+    # 
+    # print("\nTop Results:")
+    # for i, (dist, idx) in enumerate(zip(distances, indices)):
+    #     doc = db.get_document_by_index(idx)
+    #     print(f"{i+1}. (ID {doc['id']}) Distance={dist:.4f}")
+    #     print(f"   {doc['text'][:100]}...")
+    #     print()
+    pass

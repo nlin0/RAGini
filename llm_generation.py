@@ -124,27 +124,28 @@ class LLMGenerator:
 
 if __name__ == "__main__":
     # test LLM generation
-    import sys
-    
-    if len(sys.argv) > 1:
-        model_name = sys.argv[1]
-    else:
-        model_name = "tinyllama"
-    
-    try:
-        print(f"Testing LLM generation with model: {model_name}")
-        generator = LLMGenerator(model_name=model_name)
-        
-        test_prompt = "What causes squirrels to lose fur?"
-        print(f"\nPrompt: {test_prompt}")
-        print("\nGenerating response...")
-        
-        response = generator.generate(test_prompt, max_tokens=128)
-        print(f"\nResponse:\n{response}")
-        
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        print("\nPlease download a model first. For TinyLlama:")
-        print("wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF/resolve/main/tinyllama-1.1b-chat-v0.3.Q4_K_M.gguf")
+    # import sys
+    # 
+    # if len(sys.argv) > 1:
+    #     model_name = sys.argv[1]
+    # else:
+    #     model_name = "tinyllama"
+    # 
+    # try:
+    #     print(f"Testing LLM generation with model: {model_name}")
+    #     generator = LLMGenerator(model_name=model_name)
+    #     
+    #     test_prompt = "What causes squirrels to lose fur?"
+    #     print(f"\nPrompt: {test_prompt}")
+    #     print("\nGenerating response...")
+    #     
+    #     response = generator.generate(test_prompt, max_tokens=128)
+    #     print(f"\nResponse:\n{response}")
+    #     
+    # except FileNotFoundError as e:
+    #     print(f"Error: {e}")
+    #     print("\nPlease download a model first. For TinyLlama:")
+    #     print("wget https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF/resolve/main/tinyllama-1.1b-chat-v0.3.Q4_K_M.gguf")
+    pass
 
 
