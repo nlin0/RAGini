@@ -1,33 +1,35 @@
 """
-vector_db.py builds and queries a simple vector database with FAISS. It loads the
-precomputed document embeddings, builds a FAISS index for similarity search,
-and allows users to query index with a natural language.
+vector_db.py builds and queries a vector database with FAISS.
+This is Component 2 of the RAG pipeline - Vector Search.
 """
+import os
+# fix OpenMP conflict on macOS when using both FAISS and PyTorch
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import json
 import faiss
 import numpy as np
-import torch
-from transformers import AutoModel, AutoTokenizer
-import torch.nn.functional as F
 
-MODEL_NAME = "BAAI/bge-base-en-v1.5"
 PREPROCESSED_FILE = "preprocessed_documents.json"
 INDEX_FILE = "faiss.index"
 
-def get_device():
-    if torch.backends.mps.is_available():
-        return "mps"
-    elif torch.cuda.is_available():
-        return "cuda"
-    return "cpu"
-
 
 def load_preprocessed_documents(filename):
+    """Load preprocessed documents from JSON file."""
     with open(filename, "r") as f:
         return json.load(f)
 
 
 def build_faiss_index(embeddings):
+    """
+    Build a FAISS index from document embeddings.
+    
+    Args:
+        embeddings: List of embedding vectors or numpy array of shape (n_docs, 768)
+        
+    Returns:
+        FAISS index ready for search
+    """
     embeddings = np.array(embeddings).astype("float32")
     dim = embeddings.shape[1]
     index = faiss.IndexFlatL2(dim)
@@ -35,65 +37,72 @@ def build_faiss_index(embeddings):
     return index
 
 
-def embed_query(query, model, tokenizer, device):
-    enc = tokenizer(
-        query, max_length=512, padding=True, truncation=True, return_tensors="pt"
-    )
-    enc = {k: v.to(device) for k, v in enc.items()}
-
-    with torch.no_grad():
-        out = model(**enc)
-        seq = out.last_hidden_state
-        mask = enc["attention_mask"]
-
-        pooled = (seq * mask.unsqueeze(-1)).sum(1) / mask.sum(-1, keepdim=True)
-        pooled = F.normalize(pooled, p=2, dim=1)
-
-    return pooled.cpu().numpy().astype("float32")  # shape (1, 768)
-
-
-def query_index(query, index, model, tokenizer, documents, top_k=5, device="cpu"):
-    q_emb = embed_query(query, model, tokenizer, device)
-    D, I = index.search(q_emb, top_k)
-
-    results = []
-    for idx, dist in zip(I[0], D[0]):
-        doc = documents[idx]
-        results.append({
-            "id": doc["id"],
-            "text": doc["text"],
-            "score": float(dist)
-        })
-    return results
-
-
-def main():
-    device = get_device()
-    print(f"Using device: {device}")
-
-    # print("Loading documents...")
-    documents = load_preprocessed_documents(PREPROCESSED_FILE)
-    embeddings = [doc["embedding"] for doc in documents]
-
-    # print("Building FAISS index...")
-    index = build_faiss_index(embeddings)
-
-    print("Loading BGE model...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModel.from_pretrained(MODEL_NAME).to(device)
-
-    while True:
-        query = input("Query: ").strip()
-        if query in ["quit", "exit"]:
-            break
-
-        results = query_index(query, index, model, tokenizer, documents, top_k=5, device=device)
+class VectorDB:
+    """Vector database for similarity search using FAISS."""
+    
+    def __init__(self, preprocessed_file=PREPROCESSED_FILE):
+        """
+        Initialize the vector database.
         
-        print("\nTop Results:")
-        for i, r in enumerate(results):
-            print(f"{i+1}. (ID {r['id']}) Score={r['score']:.4f}")
-            print(r["text"])
-            print("")
+        Args:
+            preprocessed_file: Path to preprocessed_documents.json
+        """
+        print("Loading preprocessed documents...")
+        self.documents = load_preprocessed_documents(preprocessed_file)
+        
+        print("Building FAISS index...")
+        embeddings = [doc["embedding"] for doc in self.documents]
+        self.index = build_faiss_index(embeddings)
+        
+        print(f"Vector database ready with {len(self.documents)} documents.")
+    
+    def search(self, query_embedding, top_k=3):
+        """
+        Search for top-k most similar documents.
+        
+        Args:
+            query_embedding: numpy array of shape (768,) - query vector
+            top_k: Number of results to return
+            
+        Returns:
+            tuple: (distances, indices) where:
+                - distances: numpy array of shape (top_k,) - L2 distances
+                - indices: numpy array of shape (top_k,) - document indices
+        """
+        # reshape to (1, 768) for FAISS batch search
+        query_embedding = query_embedding.reshape(1, -1).astype("float32")
+        
+        # search
+        distances, indices = self.index.search(query_embedding, top_k)
+        
+        # return as 1D arrays
+        return distances[0], indices[0]
+    
+    def get_document_by_index(self, idx):
+        """Get document by its index in the database."""
+        return self.documents[idx]
+
 
 if __name__ == "__main__":
-    main()
+    # test the vector database
+    from encode import QueryEncoder
+    
+    print("Initializing vector database...")
+    db = VectorDB()
+    
+    print("\nInitializing query encoder...")
+    encoder = QueryEncoder()
+    
+    # test search
+    test_query = "What causes squirrels to lose fur?"
+    print(f"\nQuery: {test_query}")
+    
+    query_emb = encoder.encode(test_query)
+    distances, indices = db.search(query_emb, top_k=5)
+    
+    print("\nTop Results:")
+    for i, (dist, idx) in enumerate(zip(distances, indices)):
+        doc = db.get_document_by_index(idx)
+        print(f"{i+1}. (ID {doc['id']}) Distance={dist:.4f}")
+        print(f"   {doc['text'][:100]}...")
+        print()
